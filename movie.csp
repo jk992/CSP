@@ -1,0 +1,7 @@
+-- Salas do cinema
+datatype salas = Sala1 | Sala2 | Sala3
+-- Combos do lanche
+datatype combos = Pequeno | Medio | Grande
+
+
+vagasSala = 10
