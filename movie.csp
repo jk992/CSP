@@ -5,3 +5,31 @@ datatype combos = Pequeno | Medio | Grande
 
 
 vagasSala = 10
+
+
+-- Somente Ideias (Natan)
+id: {0..2}
+
+moviePrice = 5
+snackSmallPrice = 1
+snackMediumPrice = 2
+snackBigPrice = 3
+peoplePerMovieTheater = 10
+
+datatype movies = Movie1 | Movie2 | Movie3
+datatype snacks = Small | Medium | Big
+datatype pays = Cash | CreditCard
+
+channel movieChoice: id.movies
+channel snackChoice: id.snacks
+channel hasSlot: movies.bool
+channel receiveOrder: 
+
+TOTEM(id) = start -> movieChoice.id?movie -> hasSlot.movie?resp -> if (resp == true) then (snackChoice.id?snack -> PAYMENT -> emiteOrder [] PAYMENT) -> emiteTicket -> end -> TOTEM
+							  else (canceled -> Totem(id))
+
+CASHIER(id) = movieChoice.id?movie -> hasSlot.movie?resp -> if (resp == true) then snackChoice.id?snack else -> Servidor -> Pagamento -> end -> Totem
+
+SNACK_BAR = receiveOrder.
+
+SERVER = movieChoice!id!movie -> if checkSlot(movie) == true then (hasSlot.movie!true) else (hasSlot.movie|false) -> SERVER
