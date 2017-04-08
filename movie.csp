@@ -8,7 +8,7 @@ vagasSala = 10
 
 
 -- Somente Ideias (Natan)
-id: {0..2}
+id: {0..5}
 
 moviePrice = 5
 snackSmallPrice = 1
@@ -22,14 +22,21 @@ datatype pays = Cash | CreditCard
 
 channel movieChoice: id.movies
 channel snackChoice: id.snacks
-channel hasSlot: movies.bool
+channel hasSlot: id.movies.bool
 channel receiveOrder: 
 
-TOTEM(id) = start -> movieChoice.id?movie -> hasSlot.movie?resp -> if (resp == true) then (snackChoice.id?snack -> PAYMENT -> emiteOrder [] PAYMENT) -> emiteTicket -> end -> TOTEM
+-- id de 0 a 2
+TOTEM(id) = movieChoice.id?movie -> hasSlot.id.movie?resp -> if (resp == true) then (snackChoice.id?snack -> PAYMENT -> emiteOrder [] PAYMENT()) -> emiteTicket -> end -> TOTEM
 							  else (canceled -> Totem(id))
 
+--id de 3 a 5
 CASHIER(id) = movieChoice.id?movie -> hasSlot.movie?resp -> if (resp == true) then snackChoice.id?snack else -> Servidor -> Pagamento -> end -> Totem
 
-SNACK_BAR = receiveOrder.
+SERVER = movieChoice!id!movie -> hasSlot.id.movie!checkSlot(movie)
 
-SERVER = movieChoice!id!movie -> if checkSlot(movie) == true then (hasSlot.movie!true) else (hasSlot.movie|false) -> SERVER
+
+PAYMENT = 
+
+SNACK_BAR = receiveOrder.|
+
+function checkSlot(){}
