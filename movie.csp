@@ -19,28 +19,34 @@ peoplePerMovieTheater = 10
 datatype movies = Movie1 | Movie2 | Movie3
 datatype snacks = Small | Medium | Big
 
+channel in
+channel out
 channel movieChoice: id.movies
 channel snackChoice: id.snacks
 channel hasSlot: id.movies.bool
 channel receiveOrder: 
 
 -- id de 0 a 2
-TOTEM(id) = movieChoice.id?movie -> hasSlot.id.movie?resp -> if (resp == true) then (snackChoice.id?snack -> if (snack == small) then (PAYMENT(id, moviePrice + snackSmallPrice) -> emiteOrdem.id!order
-                                                                                                             else (PAYMENT(id, moviePrice + snackMediumPrice) -> emiteOrdem.id!order
-                                                                                                             else (PAYMENT(id, moviePrice + snackBiPrice)  -> emiteOrdem.id!order
-                                                                                     [] PAYMENT(id, moviePrice)) -> emiteTicket.id!ticket -> end -> TOTEM)
-                                                             else (canceled -> Totem(id))
+TOTEM(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.id.movie?resp -> if (resp == true) then (SNACK_BAR(id, 0) -> in?snackPrice -> PAYMENT(id, moviePrice + snackPrice) -> emiteOrdem.id!order
+                                                                                                          [] PAYMENT(id, moviePrice)) -> emiteTicket.id!ticket -> end -> TOTEM(id))
+                                                                                  else (canceled -> TOTEM(id))
 
 --id de 3 a 5
 CASHIER(id) = movieChoice.id?movie -> hasSlot.id.movie?resp -> if (resp == true) then (snackChoice.id?snack -> if (snack == small) then (PAYMENT(id, moviePrice + snackSmallPrice)) else (PAYMENT(id, moviePrice + snackMediumPrice) else (PAYMENT(id, moviePrice + snackBiPrice))) -> emiteOrder [] PAYMENT(id, moviePrice)) else (canceled -> Totem(id)) -> emiteTicket -> end -> TOTEM
 
 SERVER(id) = movieChoice?id?movie -> hasSlot.id.movie!checkSlot(movie)
-      | snackChoice?id?snack -> emiteOrder.id!geraOrder(id, snack)
-      | paymentCheck?id?resp -> emiteTicket.id!geraTicket(id, movie)
+           | snackChoice?id?snack -> emiteOrder.id!geraOrder(id, snack)
+           | paymentCheck?id?resp -> emiteTicket.id!geraTicket(id, movie)
 
-PAYMENT(id, price) = cash?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
-        [] credit_card?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
+PAYMENT(id, price, 0) = credit_card?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
+PAYMENT(id, price, 1) = cash?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
+                      [] PAYMENT(id, price, 0)
 
-SNACK_BAR = receiveOrder.|
+SNACK_BAR(id) = in?snack -> snackChoice!id!snack -> if (snack == small) then out!snackSmallPrice
+                                                    else out!snackMediumPrice
+                                                    else out!snackBiPrice
+          | receiveOrder
 
-function checkSlot(){}
+function bool checkSlot(movie){
+  --return bool
+}
