@@ -1,10 +1,10 @@
 -- Somente Ideias (Natan)
 id: {0..5}
-slots = 10
+order: {100..200}
+ticket: {500..510}
+
 moviePrice = 5
-snackSmallPrice = 1
-snackMediumPrice = 2
-snackBigPrice = 3
+snackPrice = 1
 peoplePerMovieTheater = 10
 
 datatype movies = Movie1 | Movie2 | Movie3
@@ -15,32 +15,39 @@ channel out
 channel movieChoice: id.movies
 channel snackChoice: id.snacks
 channel hasSlot: movies.bool
-channel receiveOrder: 
+channel newOrder: order.snacks
+channel newTicket: ticket.movies
 
 -- id de 0 a 2
-TOTEM(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id, 0) -> in?snackPrice -> PAYMENT(id, moviePrice + snackPrice) -> emiteOrdem.id!order
-                                                                                                          [] PAYMENT(id, moviePrice)) ->  emiteTicket.id!ticket -> end -> TOTEM(id))
-                                                                                  else (canceled -> TOTEM(id))
+TOTEM(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id, 0) -> snackChoice.id?snack?price -> PAYMENT(id, moviePrice + price, 0) -> buy_with_snack -> newOrder?order?snack -> printOrder
+																										                                                   [] PAYMENT(id, moviePrice, 0)) -> newTicket?ticket?movie -> printTicket -> end -> TOTEM(id))
+																				                                       else (canceled -> TOTEM(id))
 
---id de 3 a 5
-CASHIER(id) = movieChoice.id?movie -> hasSlot.id.movie?resp -> if (resp == true) then (snackChoice.id?snack -> if (snack == small) then (PAYMENT(id, moviePrice + snackSmallPrice)) else (PAYMENT(id, moviePrice + snackMediumPrice) else (PAYMENT(id, moviePrice + snackBiPrice))) -> emiteOrder [] PAYMENT(id, moviePrice)) else (canceled -> Totem(id)) -> emiteTicket -> end -> TOTEM
+-- id de 3 a 5
+CASHIER(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id, 0) -> snackChoice.id?snack?price -> PAYMENT(id, moviePrice + price, 1) -> buy_with_snack -> newOrder?order?snack -> printOrder
+																										                                                   [] PAYMENT(id, moviePrice, 1)) -> newTicket?ticket?movie -> printTicket -> end -> TOTEM(id))
+																				                                       else (canceled -> TOTEM(id))
 
 SERVER  = movieChoice?id?movie -> hasSlot.movie?slot
-        | snackChoice?id?snack -> emiteOrder.id!geraOrder(id, snack)
-        | paymentCheck?id?resp -> emiteTicket.id!geraTicket(id, movie)
+        | buy_with_snack -> paymentCheck?id?resp -> newOrder!createOrder(order)!snack;newTicket!createTicket(ticket)!movie -> SERVER
+	      | paymentCheck?id?resp -> newTicket.id!createTicket(ticket)!movie -> SERVER
         | startSession -> SERVER
 
 PAYMENT(id, price, 0) = credit_card?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
 PAYMENT(id, price, 1) = cash?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
                       [] PAYMENT(id, price, 0)
 
-SNACK_BAR(id) = in?snack -> snackChoice!id!snack -> if (snack == small) then out!snackSmallPrice
-                                                    else out!snackMediumPrice
-                                                    else out!snackBiPrice
-          | receiveOrder
+-- id de 0 a 2
+SNACK_BAR(id, x) = in?snack -> snackChoice.id!snack!checkPrice(snack)
+				 | newOrder?order?snack -> KITCHEN(<(orders, snacks)>^(order, snack))
           
 SESSION(movie, 0) = startSession -> SESSION(movie, 10)
 SESSION(movie, slots) = if(slots-1 >= 0) then hasSlot.movie!true -> SESSION(movie, slots-1)
                         else hasSlot.movie!false -> SESSION(movie,0)
-                          
 
+function checkPrice(snack) {
+	if snack == Small then
+		snackPrice * 1
+	else
+		snackPrice * 3
+}
