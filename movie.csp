@@ -39,8 +39,9 @@ PAYMENT(id, price, 1) = cash?x -> if (x==price) then (paymentCheck.id!true) else
 
 -- id de 0 a 2
 SNACK_BAR(id, x) = in?snack -> snackChoice.id!snack!checkPrice(snack)
-				 | newOrder?order?snack -> KITCHEN(<(orders, snacks)>^(order, snack))
-          
+				 | newOrder?order?snack -> KITCHEN(<(orders, snacks)>^(order, snack)) -> orderReady -> SNACK_BAR(id,x)
+BOARD = orderReady -> showOrder -> BOARD
+
 SESSION(movie, 0) = startSession -> SESSION(movie, 10)
 SESSION(movie, slots) = if(slots-1 >= 0) then hasSlot.movie!true -> SESSION(movie, slots-1)
                         else hasSlot.movie!false -> SESSION(movie,0)
