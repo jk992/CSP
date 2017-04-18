@@ -42,14 +42,16 @@ SESSION(movie, slots) = if(slots-1 >= 0) then hasSlot.movie!true -> SESSION(movi
 SNACK_BAR(id) = in?snack -> snackChoice.id!snack!checkPrice(snack) -> SNACK_BAR(id)
 	      | newOrder?order?snack -> KITCHEN(orders^<order>, snacks^<snack>) -> SNACK_BAR(id)
 
-KITCHEN(orders, snacks) = orderReady!head(orders)!head(snacks) -> KITCHEN(tail(orders), tail(snacks))
+-- id de 0 a 5
+SNACK_BAR(id) = in?snack -> snackChoice.id!snack!checkPrice(snack) -> SNACK_BAR(id)
+	      | newOrder?order?snack -> KITCHEN(orders^<order>, snacks^<snack>) -> SNACK_BAR(id)
+	      | orderReady?order?snack -> showOrder -> SNACK_BAR(id)
 
-BOARD = orderReady?order?snack -> printOrder -> BOARD
+KITCHEN(orders, snacks) = pushButton -> orderReady!head(orders)!head(snacks) -> KITCHEN(tail(orders), tail(snacks))
 
 PAYMENT(id, price, 0) = in?credit_card -> if (credit_card==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
 PAYMENT(id, price, 1) = in?cash -> if (cash==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
                       [] PAYMENT(id, price, 0)
-
 
 function checkPrice(snack) =
 	if snack == Small then
