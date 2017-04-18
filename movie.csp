@@ -59,3 +59,75 @@ function checkPrice(snack) =
 		snackPrice * 1
 	else
 		snackPrice * 3
+
+
+----------------------------------------- Testando ideias
+
+
+id: {0..5}
+order: {0..}
+ticket: {0..}
+
+moviePrice = 5
+snackPrice = 1
+peoplePerMovieTheater = 10
+
+datatype movies = Movie1 | Movie2 | Movie3
+datatype snacks = Small | Medium | Big
+
+channel in
+channel out
+channel hasSlot: movies.bool
+channel movieChoice: id.movies
+channel snackChoice: id.snacks
+channel newOrder: order.snacks
+channel newTicket: ticket.movies
+channel orderReady: order.snacks
+channel sessionMovie: movies.<ticket>
+
+-- id de 0 a 2
+TOTEM(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp ->
+					 if (resp == true) then
+						(SNACK_BAR(id) -> snackChoice.id?snack?price -> payCard -> buy_with_snack -> newOrder?order?snack -> printOrder
+						 [] buy_without_snack -> payCard -> newTicket?ticket?movie -> printTicket -> end -> TOTEM(id))
+					 else
+						(canceled -> TOTEM(id))
+
+-- id de 3 a 5
+CASHIER(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id) -> snackChoice.id?snack?price -> payCash -> buy_with_snack -> newOrder?order?snack -> printOrder
+																										 [] payCash -> newTicket?ticket?movie -> printTicket -> end -> CASHIER(id))
+																				 else (canceled -> CASHIER(id))    
+
+SERVER  = startSession -> sessionMovie!movies!setTicket(movies, <>) -> start -> SERVER
+		| movieChoice?id?movie -> sessionMovie.movie!tickets -> hasSlot.movie?getSlot(movie, tickets) -> SERVER
+		| newTicket.id!ticket!movie -> sessionMovie.movie?tickets -> sessionMovie.movie!(tickets^<ticket>) -> SERVER
+		| buy_with_snack -> newOrder?order?snack -> KITCHEN(orders^<order>, snacks^<snack>) -> newTicket!createTicket(ticket)!movie -> SERVER
+	
+-- id de 0 a 5
+SNACK_BAR(id) = in?snack -> snackChoice.id!snack!checkPrice(snack) -> SNACK_BAR(id)
+			  | orderReady?order?snack -> showOrder -> SNACK_BAR(id)
+
+KITCHEN(orders, snacks) = pushButton -> orderReady!head(orders)!head(snacks) -> KITCHEN(tail(orders), tail(snacks))
+
+-- id de 0 a 2
+TICKET_GATE(id, movie) = in?ticket -> sessionMovie.movie?tickets -> if (elem(ticket, tickets)) then unlock -> sessionMovie.movie!tickets -> TICKET_GATE(id, movie)
+								    else lock -> sessionMovie.movie!tickets -> TICKET_GATE(id, movie)
+
+checkPrice(snack) =
+	if snack == Small then
+		snackPrice * 1
+	else
+		snackPrice * 3
+
+setSession(movie, <>) = <>
+setSession(movie, tickets) = tickets
+
+getSlot(movie, tickets) =
+	if(#tickets == peoplePerMovieTheater) then
+		false
+	else
+		true
+
+addTicket(movie, ticket, tickets) = tickets^<ticket>
+
+removeOrder(orders, snacks) = 
