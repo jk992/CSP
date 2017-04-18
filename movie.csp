@@ -1,4 +1,3 @@
--- Somente Ideias (Natan)
 id: {0..5}
 order: {100..200}
 ticket: {500..510}
@@ -12,9 +11,10 @@ datatype snacks = Small | Medium | Big
 
 channel in
 channel out
+channel hasSlot: movies.bool
+channel paymentCheck: id.bool
 channel movieChoice: id.movies
 channel snackChoice: id.snacks
-channel hasSlot: movies.bool
 channel newOrder: order.snacks
 channel newTicket: ticket.movies
 
