@@ -22,7 +22,7 @@ channel sessionMovie: movies.<ticket>
 
 SERVER  = startSession -> SESSION(movies,10);SERVER
 	| movieChoice?id?movie -> hasSlot.movie?slot
-	| buy_with_snack -> paymentCheck?id?resp -> newOrder!createOrder(order)!snack;newTicket!createTicket(ticket)!movie -> SERVER
+	| buy_with_snack -> newOrder!createOrder(order)!snack;newTicket!createTicket(ticket)!movie -> SERVER
 	| paymentCheck?id?resp -> newTicket.id!createTicket(ticket)!movie -> SERVER
 	
 -- id de 0 a 2
