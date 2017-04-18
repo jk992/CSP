@@ -17,39 +17,42 @@ channel movieChoice: id.movies
 channel snackChoice: id.snacks
 channel newOrder: order.snacks
 channel newTicket: ticket.movies
+channel orderReady: order.snacks
 
+SERVER  = startSession -> SESSION(movies,10);SERVER
+	| movieChoice?id?movie -> hasSlot.movie?slot
+	| buy_with_snack -> paymentCheck?id?resp -> newOrder!createOrder(order)!snack;newTicket!createTicket(ticket)!movie -> SERVER
+	| paymentCheck?id?resp -> newTicket.id!createTicket(ticket)!movie -> SERVER
+	
 -- id de 0 a 2
-TOTEM(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id, 0) -> snackChoice.id?snack?price -> PAYMENT(id, moviePrice + price, 0) -> buy_with_snack -> newOrder?order?snack -> printOrder
+TOTEM(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id) -> snackChoice.id?snack?price -> PAYMENT(id, moviePrice + price, 0) -> buy_with_snack -> newOrder?order?snack -> printOrder
 																										                                                   [] PAYMENT(id, moviePrice, 0)) -> newTicket?ticket?movie -> printTicket -> end -> TOTEM(id))
 																				                                       else (canceled -> TOTEM(id))
 
 -- id de 3 a 5
-CASHIER(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id, 0) -> snackChoice.id?snack?price -> PAYMENT(id, moviePrice + price, 1) -> buy_with_snack -> newOrder?order?snack -> printOrder
+CASHIER(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id) -> snackChoice.id?snack?price -> PAYMENT(id, moviePrice + price, 1) -> buy_with_snack -> newOrder?order?snack -> printOrder
 																										                                                   [] PAYMENT(id, moviePrice, 1)) -> newTicket?ticket?movie -> printTicket -> end -> TOTEM(id))
-																				                                       else (canceled -> TOTEM(id))
-
-SERVER  = startSession -> SESSION(movies,10);SERVER
-	| movieChoice?id?movie -> hasSlot.movie?slot
-        | buy_with_snack -> paymentCheck?id?resp -> newOrder!createOrder(order)!snack;newTicket!createTicket(ticket)!movie -> SERVER
-	| paymentCheck?id?resp -> newTicket.id!createTicket(ticket)!movie -> SERVER
-        
-
-PAYMENT(id, price, 0) = in?credit_card -> if (credit_card==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
-PAYMENT(id, price, 1) = in?cash -> if (cash==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
-                      [] PAYMENT(id, price, 0)
-
--- id de 0 a 2
-SNACK_BAR(id, x) = in?snack -> snackChoice.id!snack!checkPrice(snack)
-		 | newOrder?order?snack -> KITCHEN(<(orders, snacks)>^(order, snack)) -> orderReady -> SNACK_BAR(id,x)
-BOARD = orderReady -> showOrder -> BOARD
+																				                                       else (canceled -> TOTEM(id))    
 
 SESSION(movie, 0) = wait -> newSession -> SESSION(movie, 10)
 SESSION(movie, slots) = if(slots-1 >= 0) then hasSlot.movie!true -> SESSION(movie, slots-1)
                         else hasSlot.movie!false -> SESSION(movie,0)
 
-function checkPrice(snack) {
+-- id de 0 a 5
+SNACK_BAR(id) = in?snack -> snackChoice.id!snack!checkPrice(snack) -> SNACK_BAR(id)
+	      | newOrder?order?snack -> KITCHEN(orders^<order>, snacks^<snack>) -> SNACK_BAR(id)
+
+KITCHEN(orders, snacks) = orderReady!head(orders)!head(snacks) -> KITCHEN(tail(orders), tail(snacks))
+
+BOARD = orderReady?order?snack -> printOrder -> BOARD
+
+PAYMENT(id, price, 0) = in?credit_card -> if (credit_card==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
+PAYMENT(id, price, 1) = in?cash -> if (cash==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
+                      [] PAYMENT(id, price, 0)
+
+
+function checkPrice(snack) =
 	if snack == Small then
 		snackPrice * 1
 	else
 		snackPrice * 3
-}
