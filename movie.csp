@@ -34,13 +34,13 @@ SERVER  = startSession -> SESSION(movies,10);SERVER
 	| paymentCheck?id?resp -> newTicket.id!createTicket(ticket)!movie -> SERVER
         
 
-PAYMENT(id, price, 0) = credit_card?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
-PAYMENT(id, price, 1) = cash?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
+PAYMENT(id, price, 0) = in?credit_card -> if (credit_card==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
+PAYMENT(id, price, 1) = in?cash -> if (cash==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
                       [] PAYMENT(id, price, 0)
 
 -- id de 0 a 2
 SNACK_BAR(id, x) = in?snack -> snackChoice.id!snack!checkPrice(snack)
-				 | newOrder?order?snack -> KITCHEN(<(orders, snacks)>^(order, snack)) -> orderReady -> SNACK_BAR(id,x)
+		 | newOrder?order?snack -> KITCHEN(<(orders, snacks)>^(order, snack)) -> orderReady -> SNACK_BAR(id,x)
 BOARD = orderReady -> showOrder -> BOARD
 
 SESSION(movie, 0) = wait -> newSession -> SESSION(movie, 10)
