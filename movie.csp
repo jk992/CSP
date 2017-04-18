@@ -1,6 +1,6 @@
 id: {0..5}
-order: {100..200}
-ticket: {500..510}
+order: {0..}
+ticket: {0..9}
 
 moviePrice = 5
 snackPrice = 1
@@ -18,6 +18,7 @@ channel snackChoice: id.snacks
 channel newOrder: order.snacks
 channel newTicket: ticket.movies
 channel orderReady: order.snacks
+channel sessionMovie: movies.<ticket>
 
 SERVER  = startSession -> SESSION(movies,10);SERVER
 	| movieChoice?id?movie -> hasSlot.movie?slot
@@ -52,6 +53,10 @@ KITCHEN(orders, snacks) = pushButton -> orderReady!head(orders)!head(snacks) -> 
 PAYMENT(id, price, 0) = in?credit_card -> if (credit_card==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
 PAYMENT(id, price, 1) = in?cash -> if (cash==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
                       [] PAYMENT(id, price, 0)
+
+-- id de 0 a 2
+TICKET_GATE(id, movie) = in?ticket -> sessionMovie.movie?tickets -> if (elem(ticket, tickets)) then unlock -> sessionMovie.movie!tickets -> TICKET_GATE(id, movie)
+								    else lock -> sessionMovie.movie!tickets -> TICKET_GATE(id, movie)
 
 function checkPrice(snack) =
 	if snack == Small then
