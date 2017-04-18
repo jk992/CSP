@@ -31,7 +31,7 @@ CASHIER(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp ->
 SERVER  = movieChoice?id?movie -> hasSlot.movie?slot
         | buy_with_snack -> paymentCheck?id?resp -> newOrder!createOrder(order)!snack;newTicket!createTicket(ticket)!movie -> SERVER
 	      | paymentCheck?id?resp -> newTicket.id!createTicket(ticket)!movie -> SERVER
-        | startSession -> SERVER
+        | startSession -> in?movie -> SESSION(movie,10).SERVER
 
 PAYMENT(id, price, 0) = credit_card?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
 PAYMENT(id, price, 1) = cash?x -> if (x==price) then (paymentCheck.id!true) else (paymentCheck.id!false)
@@ -42,7 +42,7 @@ SNACK_BAR(id, x) = in?snack -> snackChoice.id!snack!checkPrice(snack)
 				 | newOrder?order?snack -> KITCHEN(<(orders, snacks)>^(order, snack)) -> orderReady -> SNACK_BAR(id,x)
 BOARD = orderReady -> showOrder -> BOARD
 
-SESSION(movie, 0) = startSession -> SESSION(movie, 10)
+SESSION(movie, 0) = wait -> newSession -> SESSION(movie, 10)
 SESSION(movie, slots) = if(slots-1 >= 0) then hasSlot.movie!true -> SESSION(movie, slots-1)
                         else hasSlot.movie!false -> SESSION(movie,0)
 
