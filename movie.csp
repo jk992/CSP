@@ -40,7 +40,7 @@ CASHIER_MOVIE(idCashier,movie) = serverMovieChannel.movie!idCashier -> CASHIER_A
 CASHIER_AUX(idCashier,movie) = hasSlot.idCashier.movie?resp ->
 					(if (resp == true) then
 						(payCard -> printTicket -> CASHIER(idCashier))
-						[] snackChoice.idTotem?snack -> payCard -> printTicket -> CASHIER_SNACK(idTotem,snack));CASHIER(idCashier)
+						[] snackChoice.idTotem?snack -> payCard -> printTicket -> CASHIER_SNACK(idTotem,snack);CASHIER(idCashier)
 					else(CASHIER(idCashier)))
 CASHIER_SNACK(idTotem,snack) = newOrder.snack!idTotem -> printOrder -> SKIP
 
