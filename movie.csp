@@ -1,235 +1,3 @@
-id: {0..5}
-order: {0..}
-ticket: {0..9}
-
-moviePrice = 5
-snackPrice = 1
-peoplePerMovieTheater = 10
-
-datatype movies = Movie1 | Movie2 | Movie3
-datatype snacks = Small | Medium | Big
-
-channel in
-channel out
-channel hasSlot: movies.bool
-channel paymentCheck: id.bool
-channel movieChoice: id.movies
-channel snackChoice: id.snacks
-channel newOrder: order.snacks
-channel newTicket: ticket.movies
-channel orderReady: order.snacks
-channel sessionMovie: movies.<ticket>
-
-SERVER  = startSession -> SESSION(movies,10);SERVER
-	| movieChoice?id?movie -> hasSlot.movie?slot
-	| buy_with_snack -> newOrder!createOrder(order)!snack;newTicket!createTicket(ticket)!movie -> SERVER
-	| paymentCheck?id?resp -> newTicket.id!createTicket(ticket)!movie -> SERVER
-	
--- id de 0 a 2
-TOTEM(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id) -> snackChoice.id?snack?price -> payCard -> buy_with_snack -> newOrder?order?snack -> printOrder
-																		     [] payCard -> newTicket?ticket?movie -> printTicket -> end -> TOTEM(id))
-								               else (canceled -> TOTEM(id))
-
--- id de 3 a 5
-CASHIER(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id) -> snackChoice.id?snack?price -> payCash -> buy_with_snack -> newOrder?order?snack -> printOrder
-																		      [] payCash -> newTicket?ticket?movie -> printTicket -> end -> CASHIER(id))
-										else (canceled -> CASHIER(id))    
-
-SESSION(movie, 0) = wait -> newSession -> SESSION(movie, 10)
-SESSION(movie, slots) = if(slots-1 >= 0) then hasSlot.movie!true -> SESSION(movie, slots-1)
-                        else hasSlot.movie!false -> SESSION(movie,0)
-
--- id de 0 a 5
-SNACK_BAR(id) = in?snack -> snackChoice.id!snack!checkPrice(snack) -> SNACK_BAR(id)
-	      | newOrder?order?snack -> KITCHEN(orders^<order>, snacks^<snack>) -> SNACK_BAR(id)
-
--- id de 0 a 5
-SNACK_BAR(id) = in?snack -> snackChoice.id!snack!checkPrice(snack) -> SNACK_BAR(id)
-	      | newOrder?order?snack -> KITCHEN(orders^<order>, snacks^<snack>) -> SNACK_BAR(id)
-	      | orderReady?order?snack -> showOrder -> SNACK_BAR(id)
-
-KITCHEN(orders, snacks) = pushButton -> orderReady!head(orders)!head(snacks) -> KITCHEN(tail(orders), tail(snacks))
-
--- id de 0 a 2
-TICKET_GATE(id, movie) = in?ticket -> sessionMovie.movie?tickets -> if (elem(ticket, tickets)) then unlock -> sessionMovie.movie!tickets -> TICKET_GATE(id, movie)
-								    else lock -> sessionMovie.movie!tickets -> TICKET_GATE(id, movie)
-
-function checkPrice(snack) =
-	if snack == Small then
-		snackPrice * 1
-	else
-		snackPrice * 3
-
-
------------------------------------------ Testando ideias
-
-
-id: {0..5}
-order: {0..}
-ticket: {0..}
-
-moviePrice = 5
-snackPrice = 1
-peoplePerMovieTheater = 10
-
-datatype movies = Movie1 | Movie2 | Movie3
-datatype snacks = Small | Medium | Big
-
-channel in
-channel out
-channel hasSlot: movies.bool
-channel movieChoice: id.movies
-channel snackChoice: id.snacks
-channel newOrder: order.snacks
-channel newTicket: ticket.movies
-channel orderReady: order.snacks
-channel sessionMovie: movies.<ticket>
-
--- id de 0 a 2
-TOTEM(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp ->
-					 if (resp == true) then
-						(SNACK_BAR(id) -> snackChoice.id?snack?price -> payCard -> buy_with_snack -> newOrder?order?snack -> printOrder
-						 [] buy_without_snack -> payCard -> newTicket?ticket?movie -> printTicket -> end -> TOTEM(id))
-					 else
-						(canceled -> TOTEM(id))
-
--- id de 3 a 5
-CASHIER(id) = start -> in?movie -> movieChoice!id!movie -> hasSlot.movie?resp -> if (resp == true) then (SNACK_BAR(id) -> snackChoice.id?snack?price -> payCash -> buy_with_snack -> newOrder?order?snack -> printOrder
-																										 [] payCash -> newTicket?ticket?movie -> printTicket -> end -> CASHIER(id))
-																				 else (canceled -> CASHIER(id))    
-
-SERVER  = startSession -> sessionMovie!movies!setTicket(movies, <>) -> start -> SERVER
-		| movieChoice?id?movie -> sessionMovie.movie!tickets -> hasSlot.movie?getSlot(movie, tickets) -> SERVER
-		| newTicket.id!ticket!movie -> sessionMovie.movie?tickets -> sessionMovie.movie!(tickets^<ticket>) -> SERVER
-		| buy_with_snack -> newOrder?order?snack -> KITCHEN(orders^<order>, snacks^<snack>) -> newTicket!createTicket(ticket)!movie -> SERVER
-	
--- id de 0 a 5
-SNACK_BAR(id) = in?snack -> snackChoice.id!snack!checkPrice(snack) -> SNACK_BAR(id)
-			  | orderReady?order?snack -> showOrder -> SNACK_BAR(id)
-
-KITCHEN(orders, snacks) = pushButton -> orderReady!head(orders)!head(snacks) -> KITCHEN(tail(orders), tail(snacks))
-
--- id de 0 a 2
-TICKET_GATE(id, movie) = in?ticket -> sessionMovie.movie?tickets -> if (elem(ticket, tickets)) then unlock -> sessionMovie.movie!tickets -> TICKET_GATE(id, movie)
-								    else lock -> sessionMovie.movie!tickets -> TICKET_GATE(id, movie)
-
-checkPrice(snack) =
-	if snack == Small then
-		snackPrice * 1
-	else
-		snackPrice * 3
-
-setSession(movie, <>) = <>
-setSession(movie, tickets) = tickets
-
-getSlot(movie, tickets) =
-	if(#tickets == peoplePerMovieTheater) then
-		false
-	else
-		true
-
-addTicket(movie, ticket, tickets) = tickets^<ticket>
-
-removeOrder(orders, snacks) = 
-
-
-
-
-
---- Testando
-id: {0..3}
-
-peoplePerMovie = 2
-
-datatype movies = Movie1 | Movie2
-datatype snacks = Small | Big
-
-channel movieChoice: id.movies
-channel serverMovieChannel: movies.id
-channel serverSnackChannel: snacks.id
-channel hasSlot: id.movies.bool
-channel newOrder: snack.id
-channel orderReady: snacks.id
-channel notifyOrder: snacks.id
-channel sessionMovie: movies.<id>
-channel receiveTicket: movies.id
-
--- Processo do caixa de autoatendimento
-TOTEM(idTotem) = movieChoice.idTotem?movie -> serverMovieChannel.movie!idTotem -> hasSlot.idTotem.movie?resp ->
-					(if (resp == true) then
-						(snackChoice.idTotem?snack -> serverSnackChannel.snack!idTotem -> payCard -> printOrder -> printTicket -> TOTEM(idTotem) [] payCard -> printTicket -> TOTEM(idTotem))
-					else
-						(TOTEM(idTotem)))
-
--- Processo do caixa
-CASHIER(idCashier) = movieChoice.idCashier?movie -> serverMovieChannel.movie!idCashier -> hasSlot.idCashier.movie?resp ->
-					(if (resp == true) then
-						(snackChoice.idCashier?snack -> serverSnackChannel.snack!idCashier -> payCash -> printOrder -> printTicket -> CASHIER(idCashier) [] payCash -> printTicket -> CASHIER(idCashier))
-					else
-						(CASHIER(idCashier))
-
--- Processo Servidor de filmes
-SERVER_MOVIE(movie, tickets) = serverMovieChannel.movie?idTicket -> (if (getSlot(tickets) == true) then (hasSlot.idTicket.movie!true -> SERVER_MOVIE(movie, tickets^<ticket>))
-																	 else (hasSlot.idTicket.movie!false -> SERVER_MOVIE(movie, <>)))
-								[]	sessionMovie.movie!tickets -> SERVER_MOVIE(movie,tickets)																 
-
--- Processo Servidor de pedidos
-SERVER_SNACK(snack, orders) = serverSnackChannel.snack?idOrder -> newOrder.snack!idOrder -> SERVER_SNACK(snack, orders^<order>)
-	[] orderReady.snack?idOrder -> notifyOrder.snack!idOrder -> SERVER_SNACK(snack, removeOrder(idOrder, orders))
-	
--- Processo
-SNACK_BAR(snack) = newOrder.snack?idOrder -> KITCHEN(idOrder, snack)
-	[] notifyOrder.snack?order -> showOrder -> SNACK_BAR(snack)
-
--- Processo da cozinha
-KITCHEN(idOrder, snack) = pushButton -> orderReady.snack!idOrder -> SKIP
-
--- Processo da porta de acesso
-TICKET_GATE(movie) = receiveTicket.movie?ticket -> sessionMovie.movie?tickets -> (if(checkTicket(ticket, tickets) then unlock -> TICKET_GATE(movie) else lock -> TICKET_GATE(movie)))
-
--- Funções auxiliares
-getSlot(tickets) =
-	if(#tickets == peoplePerMovie) then
-		false
-	else
-		true
-
-checkTicket(ticket, tickets) =
-	if(elem(ticket, tickets)) then
-		true
-	else 
-		false
-		
-removeOrder(idOrder, orders) = 
-	if (idOrder == head(orders)) then
-		tail(orders)
-	else
-		<head(orders)>^removeOrder(idOrder, tail(orders))
-		
--- Sistema
-TOTENS = ||| i:id:[0..1]@TOTEM(i)
-CASHIERS = ||| k:id:[2..3]@CASHIER(k)
-SERVER_MOVIES = ||| m:movies@SERVER_MOVIE(m)
-SERVER_SNACKS = ||| s:snacks@SERVER_SNACK(s)
-SNACK_BARS = ||| b:snacks@SNACK_BAR(b)
-TICKET_GATES = ||| t:movies@TICKET_GATE(t)
-
-tot_smo = {|serverMovieChannel|}
-cas_smo = {|serverMovieChannel|}
-tot_ssn = {|serverSnackChannel|}
-cas_ssn = {|serverSnackChannel|}
-ssn_sba = {|newOrder,notifyOrder|}
-ssn_kit = {|orderReady|}
-tga_smo = {|sessionMovie|}
-
-SYSTEM = ((TOTENS[|tot_smo|]SERVER_MOVIES)[|cas_smo|]CASHIERS)[|tot_ssn, cas_ssn|](KITCHEN[|ssn_kit|](SNACK_BARS[|ssn_sba|]SERVER_SNACKS))
-
-
-
-
-
-
--- mais perto do que antes
 id = {0..3}
 bool = {false, true}
 
@@ -250,43 +18,43 @@ channel showOrder
 channel movieChoice: id.movies
 channel snackChoice: id.snacks
 channel serverMovieChannel: movies.id
-channel serverSnackChannel: snacks.id
 channel hasSlot: id.movies.bool
 channel newOrder: snacks.id
-channel orderReady: snacks.id
-channel notifyOrder: snacks.id
 channel sessionMovie: movies.id
 channel ticketOk: movies.bool
 channel receiveTicket: movies.id
 
 -- Processo do caixa de autoatendimento
-TOTEM(idTotem) = movieChoice.idTotem?movie -> serverMovieChannel.movie!idTotem -> hasSlot.idTotem.movie?resp ->
+TOTEM(idTotem) = movieChoice.idTotem?movie -> TOTEM_MOVIE(idTotem,movie)
+TOTEM_MOVIE(idTotem,movie) = serverMovieChannel.movie!idTotem -> TOTEM_AUX(idTotem,movie)
+TOTEM_AUX(idTotem,movie) = hasSlot.idTotem.movie?resp ->
 					(if (resp == true) then
-						(snackChoice.idTotem?snack -> serverSnackChannel.snack!idTotem -> payCard -> printOrder -> printTicket -> TOTEM(idTotem) [] payCard -> printTicket -> TOTEM(idTotem))
-					else
-						(TOTEM(idTotem)))
+						(payCard -> printTicket -> TOTEM(idTotem))
+						[] snackChoice.idTotem?snack -> payCard -> printTicket -> TOTEM_SNACK(idTotem,snack);TOTEM(idTotem)
+					else(TOTEM(idTotem)))
+TOTEM_SNACK(idTotem,snack) = newOrder.snack!idTotem -> printOrder -> SKIP
 
--- Processo do caixa
-CASHIER(idCashier) = movieChoice.idCashier?movie -> serverMovieChannel.movie!idCashier -> hasSlot.idCashier.movie?resp ->
+-- Caixa
+CASHIER(idCashier) = movieChoice.idCashier?movie -> CASHIER_MOVIE(idCashier,movie)
+CASHIER_MOVIE(idCashier,movie) = serverMovieChannel.movie!idCashier -> CASHIER_AUX(idCashier,movie)
+CASHIER_AUX(idCashier,movie) = hasSlot.idCashier.movie?resp ->
 					(if (resp == true) then
-						(snackChoice.idCashier?snack -> serverSnackChannel.snack!idCashier -> payCash -> printOrder -> printTicket -> CASHIER(idCashier) [] payCash -> printTicket -> CASHIER(idCashier))
-					else
-						(CASHIER(idCashier)))
+						(payCard -> printTicket -> CASHIER(idCashier))
+						-- [] snackChoice.idTotem?snack -> payCard -> printTicket -> CASHIER_SNACK(idTotem,snack));CASHIER(idCashier)
+					else(CASHIER(idCashier)))
+CASHIER_SNACK(idTotem,snack) = newOrder.snack!idTotem -> printOrder -> SKIP
 
 -- Processo Servidor de filmes
 SERVER_MOVIE(movie, tickets) = serverMovieChannel.movie?idTicket -> (if (getSlot(tickets) == true) then (hasSlot.idTicket.movie!true -> SERVER_MOVIE(movie, tickets^<idTicket>))
 																	 else (hasSlot.idTicket.movie!false -> SERVER_MOVIE(movie, <>)))
 								[]	sessionMovie.movie?ticket -> (if(checkTicket(ticket, tickets)) then (ticketOk.movie!true -> SERVER_MOVIE(movie,tickets)) else (ticketOk.movie!false -> SERVER_MOVIE(movie,tickets)))
 
--- Processo Servidor de pedidos
-SERVER_SNACK(snack, orders) = serverSnackChannel.snack?idOrder -> newOrder.snack!idOrder -> SERVER_SNACK(snack, orders^<idOrder>)
-	[] (if(#orders>0) then (notifyOrder.snack!head(orders) -> SERVER_SNACK(snack, removeOrder(orders)))
-		else (SERVER_SNACK(snack,orders)))
-	
--- Processo
-SNACK_BAR(snack) = newOrder.snack?idOrder -> kitchen -> SNACK_BAR(snack)
-	[] pushButton -> notifyOrder.snack?order -> showOrder -> SNACK_BAR(snack)
 
+-- Processo Servidor de pedidos
+SNACK_BAR(snack) = newOrder.snack?idOrder -> kitchen -> pushButton ->  showOrder -> SNACK_BAR(snack)
+	--[] (if(#orders>0) then (showOrder -> SNACK_BAR(snack, removeOrder(orders)))
+	--	else (SNACK_BAR(snack,orders)))
+	
 -- Processo da porta de acesso
 TICKET_GATE(movie) = receiveTicket.movie?ticket -> sessionMovie.movie!ticket -> ticketOk.movie?resp -> (if (resp == true) then unlock -> TICKET_GATE(movie) else lock -> TICKET_GATE(movie))
 
@@ -309,16 +77,14 @@ removeOrder(orders) = tail(orders)
 TOTENS = ||| i:{0..1}@TOTEM(i)
 CASHIERS = ||| k:{2..3}@CASHIER(k)
 SERVER_MOVIES = ||| m:movies@SERVER_MOVIE(m,<>)
-SERVER_SNACKS = ||| s:snacks@SERVER_SNACK(s,<>)
-SNACK_BARS = ||| b:snacks@SNACK_BAR(b)
 TICKET_GATES = ||| t:movies@TICKET_GATE(t)
+SNACK_BARS = ||| s:snacks@SNACK_BAR(s)
 
-events_tot_cas_ser = {|serverMovieChannel|}
-events_tot_cas_ssn = {|serverSnackChannel|}
-events_sba_ser = {|newOrder,notifyOrder|}
+events_tot_cas_ser = {|serverMovieChannel,hasSlot|}
+events_sba_tot = {|newOrder|}
 events_ser_tga = {|sessionMovie,ticketOk|}
 
-SYSTEM = (((TOTENS[|events_tot_cas_ser|]SERVER_MOVIES) [|events_ser_tga|] TICKET_GATES) [|events_tot_cas_ssn|] (SERVER_SNACKS[|events_sba_ser|]SNACK_BARS))
+SYSTEM = ((((TOTENS[|events_tot_cas_ser|]SERVER_MOVIES) [|events_tot_cas_ser|] CASHIERS) [|events_sba_tot|] SNACK_BARS) [|events_ser_tga|] TICKET_GATES)
 
 assert SYSTEM :[livelock free]
 assert SYSTEM :[deadlock free]
