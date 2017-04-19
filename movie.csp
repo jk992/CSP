@@ -10,8 +10,8 @@ channel payCard
 channel payCash
 channel printOrder
 channel printTicket
-channel lock
-channel unlock
+channel lock: movies
+channel unlock: movies
 channel kitchen
 channel pushButton
 channel showOrder
@@ -54,7 +54,7 @@ SERVER_MOVIE(movie, tickets) = serverMovieChannel.movie?idTicket -> (if (getSlot
 SNACK_BAR(snack) = newOrder.snack?idOrder -> kitchen -> pushButton ->  showOrder -> SNACK_BAR(snack)
 	
 -- Processo da porta de acesso
-TICKET_GATE(movie) = receiveTicket.movie?ticket -> sessionMovie.movie!ticket -> ticketOk.movie?resp -> (if (resp == true) then unlock -> TICKET_GATE(movie) else lock -> TICKET_GATE(movie))
+TICKET_GATE(movie) = receiveTicket.movie?ticket -> sessionMovie.movie!ticket -> ticketOk.movie?resp -> (if (resp == true) then (unlock.movie -> TICKET_GATE(movie)) else (lock.movie -> TICKET_GATE(movie)))
 
 -- Refinamento Totem para socios
 TOTEMESP(idTotem) = movieChoice.idTotem?movie -> TOTEM_MOVIEESP(idTotem,movie)
@@ -101,3 +101,4 @@ assert SYSTEM :[livelock free]
 assert SYSTEM :[deadlock free]
 assert SYSTEM :[deterministic]
 assert TOTENS\{|payCard|}[FD=TOTENSESP
+
