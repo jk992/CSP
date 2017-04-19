@@ -39,10 +39,10 @@ CASHIER(idCashier) = movieChoice.idCashier?movie -> CASHIER_MOVIE(idCashier,movi
 CASHIER_MOVIE(idCashier,movie) = serverMovieChannel.movie!idCashier -> CASHIER_AUX(idCashier,movie)
 CASHIER_AUX(idCashier,movie) = hasSlot.idCashier.movie?resp ->
 					(if (resp == true) then
-						(payCard -> printTicket -> CASHIER(idCashier))
-						[] snackChoice.idTotem?snack -> payCard -> printTicket -> CASHIER_SNACK(idTotem,snack);CASHIER(idCashier)
+						(payCash -> printTicket -> CASHIER(idCashier))
+						[] snackChoice.idCashier?snack -> payCash -> printTicket -> CASHIER_SNACK(idCashier,snack);CASHIER(idCashier)
 					else(CASHIER(idCashier)))
-CASHIER_SNACK(idTotem,snack) = newOrder.snack!idTotem -> printOrder -> SKIP
+CASHIER_SNACK(idCashier,snack) = newOrder.snack!idCashier -> printOrder -> SKIP
 
 -- Processo Servidor de filmes
 SERVER_MOVIE(movie, tickets) = serverMovieChannel.movie?idTicket -> (if (getSlot(tickets) == true) then (hasSlot.idTicket.movie!true -> SERVER_MOVIE(movie, tickets^<idTicket>))
@@ -52,8 +52,6 @@ SERVER_MOVIE(movie, tickets) = serverMovieChannel.movie?idTicket -> (if (getSlot
 
 -- Processo Servidor de pedidos
 SNACK_BAR(snack) = newOrder.snack?idOrder -> kitchen -> pushButton ->  showOrder -> SNACK_BAR(snack)
-	--[] (if(#orders>0) then (showOrder -> SNACK_BAR(snack, removeOrder(orders)))
-	--	else (SNACK_BAR(snack,orders)))
 	
 -- Processo da porta de acesso
 TICKET_GATE(movie) = receiveTicket.movie?ticket -> sessionMovie.movie!ticket -> ticketOk.movie?resp -> (if (resp == true) then unlock -> TICKET_GATE(movie) else lock -> TICKET_GATE(movie))
@@ -61,7 +59,11 @@ TICKET_GATE(movie) = receiveTicket.movie?ticket -> sessionMovie.movie!ticket -> 
 -- Refinamento Totem para socios
 TOTEMESP(idTotem) = movieChoice.idTotem?movie -> TOTEM_MOVIEESP(idTotem,movie)
 TOTEM_MOVIEESP(idTotem,movie) = serverMovieChannel.movie!idTotem -> TOTEM_AUXESP(idTotem,movie)
-TOTEM_AUXESP(idTotem,movie) = hasSlot.idTotem.movie?resp -> snackChoice.idTotem?snack -> printTicket -> TOTEM_SNACKESP(idTotem,snack);TOTEMESP(idTotem)				
+TOTEM_AUXESP(idTotem,movie) = hasSlot.idTotem.movie?resp -> 
+							(if (resp == true) then
+								(printTicket -> TOTEMESP(idTotem))
+								[] snackChoice.idTotem?snack -> printTicket -> TOTEM_SNACKESP(idTotem,snack);TOTEMESP(idTotem)
+							else(TOTEMESP(idTotem)))
 TOTEM_SNACKESP(idTotem,snack) = newOrder.snack!idTotem -> printOrder -> SKIP
 
 
@@ -83,7 +85,7 @@ removeOrder(orders) = tail(orders)
 		
 -- Sistema
 TOTENS = ||| i:{0..1}@TOTEM(i)
-TOTENSESP = ||| J:{0..1}@TOTEMESP(J)
+TOTENSESP = ||| j:{0..1}@TOTEMESP(j)
 CASHIERS = ||| k:{2..3}@CASHIER(k)
 SERVER_MOVIES = ||| m:movies@SERVER_MOVIE(m,<>)
 TICKET_GATES = ||| t:movies@TICKET_GATE(t)
